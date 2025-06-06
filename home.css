@@ -1,0 +1,214 @@
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css');
+
+body {
+  background-color: #da0909;
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: white;
+  overflow-x: hidden;
+}
+
+/* Navbar / Header */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgb(79, 91, 131);
+  padding: 15px 25px;
+  box-shadow: 0 4px 10px rgb(0 0 0 / 0.3);
+}
+
+.navbrand {
+  font-size: 1.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: white;
+  user-select: none;
+  letter-spacing: 1px;
+}
+
+/* Hamburger icon */
+.menu-btn {
+  font-size: 26px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.4s ease;
+}
+/* rotate hamburger when active */
+.menu-btn.active {
+  transform: rotate(90deg);
+}
+
+/* Menu container */
+.menu {
+  position: absolute;
+  top: 60px;
+  right: 25px;
+  background: rgb(79, 91, 131);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.5);
+  display: none;
+  flex-direction: column;
+  min-width: 160px;
+  z-index: 999;
+  overflow: hidden;
+  animation: fadeInMenu 0.4s ease forwards;
+}
+
+.menu.show {
+  display: flex;
+}
+
+@keyframes fadeInMenu {
+  from { opacity: 0; transform: translateY(-10px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+
+/* Menu links & buttons */
+.menu a, .menu button {
+  color: white;
+  padding: 12px 18px;
+  text-decoration: none;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  transition: background 0.3s;
+}
+
+.menu a:last-child,
+.menu button:last-child {
+  border-bottom: none;
+}
+
+.menu a:hover,
+.menu button:hover {
+  background: #556799;
+}
+
+/* User pic top right */
+#userPic {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-left: 15px;
+  border: 2px solid white;
+  transition: transform 0.3s ease;
+}
+#userPic:hover {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 0 12px white;
+}
+
+/* Greeting and status container */
+.content-wrapper {
+  max-width: 700px;
+  margin: 30px auto;
+  padding: 0 20px;
+  animation: fadeInContent 1s ease forwards;
+}
+
+@keyframes fadeInContent {
+  from {opacity: 0; transform: translateY(20px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+
+.greeting {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 5px;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.greeting i {
+  color: #ffdb4d;
+  animation: glowIcon 3s ease infinite alternate;
+}
+@keyframes glowIcon {
+  from { text-shadow: 0 0 5px #ffdb4d; }
+  to { text-shadow: 0 0 20px #ffdb4d; }
+}
+
+#userStatusMessage {
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding: 10px 15px;
+  background: rgba(255 255 255 / 0.15);
+  border-radius: 10px;
+  max-width: fit-content;
+  box-shadow: 0 0 10px rgba(0,0,0,0.15);
+  user-select: none;
+}
+
+#userStatusMessage.approved {
+  color: #a6ffb1;
+  border: 1.5px solid #3aaa35;
+}
+#userStatusMessage.not-approved {
+  color: #ff9999;
+  border: 1.5px solid #aa3a3a;
+}
+
+/* Post box */
+#postBox {
+  margin-top: 30px;
+  background: rgba(255 255 255 / 0.1);
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgb(0 0 0 / 0.15);
+  animation: fadeInPost 1.2s ease forwards;
+}
+
+@keyframes fadeInPost {
+  from {opacity: 0; transform: translateY(20px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+
+#postBox label {
+  font-weight: 700;
+  font-size: 1.1rem;
+  user-select: none;
+}
+
+#userPost {
+  width: 100%;
+  height: 90px;
+  font-size: 1rem;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  resize: vertical;
+  font-family: inherit;
+}
+
+#postBox button {
+  margin-top: 12px;
+  background: #4c669f;
+  border: none;
+  padding: 12px 25px;
+  color: white;
+  font-weight: 700;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#postBox button i {
+  font-size: 1.2rem;
+}
+
+#postBox button:hover {
+  background: #344a75;
+}

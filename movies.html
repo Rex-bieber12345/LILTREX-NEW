@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Movie Hub</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 30px auto;
+      padding: 20px;
+      background-color: #1f1f1f;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #000;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    nav {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+      gap: 20px;
+    }
+
+    nav button {
+      padding: 10px 20px;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    nav button.active {
+      background-color: #e50914;
+    }
+
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      min-width: 250px;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+    }
+
+    button[type="submit"] {
+      background-color: #e50914;
+    }
+
+    button[type="submit"]:hover {
+      background-color: #b00710;
+    }
+
+    .video-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .movie-card {
+      background-color: #222;
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .movie-title {
+      padding: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .video-wrapper {
+      position: relative;
+      padding-top: 56.25%;
+    }
+
+    .video-wrapper iframe,
+    .video-wrapper video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .delete-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background-color: rgba(255, 0, 0, 0.8);
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      z-index: 2;
+    }
+
+    .delete-btn:hover {
+      background-color: rgba(200, 0, 0, 0.9);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .downloads-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .downloads-list li {
+      background: #2a2a2a;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .downloads-list a {
+      color: #1db954;
+      text-decoration: none;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 14px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎬 Movie Hub</h1>
+    <nav>
+      <button id="moviesTab" class="active">🎞 Movies</button>
+      <button id="downloadsTab">⬇️ Downloads</button>
+    </nav>
+
+    <!-- Movies Page -->
+    <div id="moviesPage">
+      <form id="videoForm">
+        <input type="text" id="movieTitle" placeholder="Movie Title" required />
+        <input type="text" id="videoUrl" placeholder="Video URL (YouTube or .mp4)" required />
+        <button type="submit">Add Movie</button>
+      </form>
+      <div id="videoGallery" class="video-gallery"></div>
+    </div>
+
+    <!-- Downloads Page -->
+    <div id="downloadsPage" class="hidden">
+      <ul id="downloadsList" class="downloads-list"></ul>
+    </div>
+
+    <footer>© 2025 Movie Hub. All rights reserved.</footer>
+  </div>
+
+  <script>
+    // DOM Elements
+    const moviesTab = document.getElementById("moviesTab");
+    const downloadsTab = document.getElementById("downloadsTab");
+    const moviesPage = document.getElementById("moviesPage");
+    const downloadsPage = document.getElementById("downloadsPage");
+
+    const videoForm = document.getElementById("videoForm");
+    const titleInput = document.getElementById("movieTitle");
+    const videoInput = document.getElementById("videoUrl");
+    const gallery = document.getElementById("videoGallery");
+    const downloadsList = document.getElementById("downloadsList");
+
+    // Tab Toggler
+    moviesTab.onclick = () => {
+      moviesTab.classList.add("active");
+      downloadsTab.classList.remove("active");
+      moviesPage.classList.remove("hidden");
+      downloadsPage.classList.add("hidden");
+    };
+
+    downloadsTab.onclick = () => {
+      downloadsTab.classList.add("active");
+      moviesTab.classList.remove("active");
+      moviesPage.classList.add("hidden");
+      downloadsPage.classList.remove("hidden");
+      renderDownloads();
+    };
+
+    // Storage Utilities
+    function getMovies() {
+      return JSON.parse(localStorage.getItem("movies")) || [];
+    }
+
+    function saveMovies(movies) {
+      localStorage.setItem("movies", JSON.stringify(movies));
+    }
+
+    function extractYouTubeID(url) {
+      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([a-zA-Z0-9_-]{11})/);
+      return match ? match[1] : null;
+    }
+
+    function createMovieCard(movie, index) {
+      const card = document.createElement("div");
+      card.className = "movie-card";
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "delete-btn";
+      deleteBtn.textContent = "Delete";
+      deleteBtn.onclick = () => deleteMovie(index);
+
+      const title = document.createElement("div");
+      title.className = "movie-title";
+      title.textContent = movie.title;
+
+      const videoWrapper = document.createElement("div");
+      videoWrapper.className = "video-wrapper";
+
+      if (movie.video.includes("youtube.com") || movie.video.includes("youtu.be")) {
+        const id = extractYouTubeID(movie.video);
+        if (id) {
+          videoWrapper.innerHTML = `<iframe src="https://www.youtube.com/embed/${id}" allowfullscreen></iframe>`;
+        }
+      } else {
+        videoWrapper.innerHTML = `
+          <video controls>
+            <source src="${movie.video}" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>`;
+      }
+
+      card.appendChild(deleteBtn);
+      card.appendChild(title);
+      card.appendChild(videoWrapper);
+
+      return card;
+    }
+
+    function renderMovies(movies) {
+      gallery.innerHTML = "";
+      movies.forEach((movie, index) => {
+        const card = createMovieCard(movie, index);
+        gallery.appendChild(card);
+      });
+    }
+
+    function deleteMovie(index) {
+      const movies = getMovies();
+      movies.splice(index, 1);
+      saveMovies(movies);
+      renderMovies(movies);
+      renderDownloads();
+    }
+
+    function renderDownloads() {
+      const movies = getMovies();
+      downloadsList.innerHTML = "";
+
+      if (movies.length === 0) {
+        downloadsList.innerHTML = "<li>No movies downloaded yet.</li>";
+        return;
+      }
+
+      movies.forEach((movie) => {
+        const li = document.createElement("li");
+        li.innerHTML = `<strong>${movie.title}</strong><br/>` +
+          (movie.video.endsWith(".mp4")
+            ? `<a href="${movie.video}" download>Download .mp4</a>`
+            : `<span style="color:#aaa;">Streaming link only</span>`);
+        downloadsList.appendChild(li);
+      });
+    }
+
+    // Initial Load
+    renderMovies(getMovies());
+
+    // Add New Movie
+    videoForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const title = titleInput.value.trim();
+      const video = videoInput.value.trim();
+
+      if (title && video) {
+        const movies = getMovies();
+        movies.push({ title, video });
+        saveMovies(movies);
+        renderMovies(movies);
+
+        // Reset form
+        titleInput.value = "";
+        videoInput.value = "";
+      }
+    });
+  </script>
+</body>
+</html>

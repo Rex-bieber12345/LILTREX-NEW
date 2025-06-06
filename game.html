@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Checkers - Smooth Multiplayer & AI with Forced Capture & Levels</title>
+<style>
+  body {
+    background: #282c34;
+    color: #eee;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    padding: 20px;
+    user-select: none;
+  }
+  h1 {
+    margin-bottom: 5px;
+  }
+  #modeSelect {
+    margin-bottom: 15px;
+  }
+  #levelSelectContainer {
+    margin-bottom: 15px;
+  }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(8, 60px);
+    grid-template-rows: repeat(8, 60px);
+    border: 4px solid #222;
+    box-shadow: 0 0 10px #0008;
+  }
+  .square {
+    width: 60px;
+    height: 60px;
+  }
+  .dark {
+    background: #769656;
+  }
+  .light {
+    background: #eeeed2;
+  }
+  .square.highlight {
+    outline: 3px solid #f00;
+    outline-offset: -3px;
+  }
+  .piece {
+    width: 48px;
+    height: 48px;
+    margin: 6px auto;
+    border-radius: 50%;
+    box-shadow: inset 0 0 10px #0008;
+    cursor: pointer;
+    position: relative;
+  }
+  .red {
+    background: #c0392b;
+  }
+  .black {
+    background: #2c3e50;
+  }
+  .king {
+    box-shadow: 0 0 15px 5px gold;
+  }
+  #info {
+    margin-top: 15px;
+    font-size: 1.2em;
+  }
+  #reset {
+    margin-top: 10px;
+    padding: 8px 20px;
+    font-size: 1em;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background: #3498db;
+    color: white;
+  }
+  #reset:hover {
+    background: #2980b9;
+  }
+  #message {
+    margin-top: 10px;
+    color: #f33;
+    font-weight: bold;
+    height: 20px;
+  }
+  #statusMessage {
+    margin-bottom: 10px;
+    color: #fffa;
+    font-weight: bold;
+    min-height: 20px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Checkers</h1>
+
+<div id="modeSelect">
+  <label>
+    <input type="radio" name="mode" value="single" checked /> Single Player (vs AI)
+  </label>
+  <label style="margin-left: 20px;">
+    <input type="radio" name="mode" value="multi" /> Two Players
+  </label>
+</div>
+
+<div id="levelSelectContainer">
+  Select Level: 
+  <select id="levelSelect"></select>
+</div>
+
+<div id="statusMessage"></div>
+
+<div id="board"></div>
+<div id="info">Current turn: <span id="currentPlayer">Red</span></div>
+<div id="message"></div>
+<button id="reset">Reset Game</button>
+
+<script>
+  const boardEl = document.getElementById('board');
+  const currentPlayerEl = document.getElementById('currentPlayer');
+  const resetBtn = document.getElementById('reset');
+  const modeRadios = document.querySelectorAll('input[name="mode"]');
+  const messageEl = document.getElementById('message');
+  const levelSelect = document.getElementById('levelSelect');
+  const statusMessage = document.getElementById('statusMessage');
+
+  const BOARD_SIZE = 8;
+  const MAX_LEVEL = 5;
+
+  let board = [];
+  let currentPlayer = 'red';
+  let selectedPiece = null;
+  let validMoves = [];
+  let mode = 'single';
+
+  // Level system variables
+  let currentLevel = 1;
+  let levelsCompleted = JSON.parse(localStorage.getItem('levelsCompleted')) || {};
+  let isFirstAIMove = true;
+
+  function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  function initBoard() {
+    board = [];
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      board[r] = [];
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        if ((r + c) % 2 === 1) {
+          if (r < 3) board[r][c] = { player: 'black', king: false };
+          else if (r > 4) board[r][c] = { player: 'red', king: false };
+          else board[r][c] = null;
+        } else {
+          board[r][c] = null;
+        }
+      }
+    }
+  }
+
+  function renderBoard() {
+    boardEl.innerHTML = '';
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        const square = document.createElement('div');
+        square.classList.add('square');
+        square.dataset.row = r;
+        square.dataset.col = c;
+
+        if ((r + c) % 2 === 1) square.classList.add('dark');
+        else square.classList.add('light');
+
+        if (validMoves.some(m => m.row === r && m.col === c)) {
+          square.classList.add('highlight');
+        }
+
+        const piece = board[r][c];
+        if (piece) {
+          const pieceEl = document.createElement('div');
+          pieceEl.classList.add('piece', piece.player);
+          if (piece.king) pieceEl.classList.add('king');
+          if (selectedPiece && selectedPiece.row === r && selectedPiece.col === c) {
+            pieceEl.style.outline = '3px solid yellow';
+            pieceEl.style.outlineOffset = '2px';
+          }
+          square.appendChild(pieceEl);
+        }
+
+        square.addEventListener('click', () => squareClick(r, c));
+        boardEl.appendChild(square);
+      }
+    }
+    currentPlayerEl.textContent = capitalize(currentPlayer);
+  }
+
+  function getValidMovesForPiece(row, col, boardState = board, mustCaptureOnly = false) {
+    const piece = boardState[row][col];
+    if (!piece) return [];
+
+    // Directions for capture (all 4 diagonals allowed)
+    const directions = [
+      [-1, -1], [-1, 1],
+      [1, -1], [1, 1]
+    ];
+
+    const moves = [];
+
+    // Check captures first
+    for (const [dr, dc] of directions) {
+      const midRow = row + dr;
+      const midCol = col + dc;
+      const destRow = row + 2 * dr;
+      const destCol = col + 2 * dc;
+      if (
+        destRow >= 0 && destRow < BOARD_SIZE &&
+        destCol >= 0 && destCol < BOARD_SIZE &&
+        boardState[destRow][destCol] === null &&
+        boardState[midRow] && boardState[midRow][midCol] &&
+        boardState[midRow][midCol].player !== piece.player
+      ) {
+        moves.push({ row: destRow, col: destCol, captures: [{ row: midRow, col: midCol }] });
+      }
+    }
+
+    if (moves.length > 0 || mustCaptureOnly) return moves;
+
+    // No captures - check normal moves
+    const normalDirections = [];
+
+    if (piece.king) {
+      normalDirections.push(...directions);
+    } else {
+      normalDirections.push(piece.player === 'red' ? [-1, -1] : [1, -1]);
+      normalDirections.push(piece.player === 'red' ? [-1, 1] : [1, 1]);
+    }
+
+    for (const [dr, dc] of normalDirections) {
+      const destRow = row + dr;
+      const destCol = col + dc;
+      if (
+        destRow >= 0 && destRow < BOARD_SIZE &&
+        destCol >= 0 && destCol < BOARD_SIZE &&
+        boardState[destRow][destCol] === null
+      ) {
+        moves.push({ row: destRow, col: destCol, captures: [] });
+      }
+    }
+
+    return moves;
+  }
+
+  function playerHasCaptureMoves(player, boardState = board) {
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        const piece = boardState[r][c];
+        if (piece && piece.player === player) {
+          const captures = getValidMovesForPiece(r, c, boardState, true);
+          if (captures.length > 0) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function getAllValidMoves(player, boardState = board) {
+    const mustCapture = playerHasCaptureMoves(player, boardState);
+    const allMoves = [];
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        const piece = boardState[r][c];
+        if (piece && piece.player === player) {
+          const moves = getValidMovesForPiece(r, c, boardState, mustCapture);
+          if (moves.length > 0) {
+            allMoves.push({ from: { row: r, col: c }, to: moves });
+          }
+        }
+      }
+    }
+    return { mustCapture, moves: allMoves };
+  }
+
+  function isMoveValid(fromRow, fromCol, toRow, toCol) {
+    const moves = getValidMovesForPiece(fromRow, fromCol, board);
+    return moves.some(m => m.row === toRow && m.col === toCol);
+  }
+
+  function makeMove(fromRow, fromCol, toRow, toCol, captures) {
+    return new Promise(resolve => {
+      const piece = board[fromRow][fromCol];
+      board[toRow][toCol] = piece;
+      board[fromRow][fromCol] = null;
+
+      // Remove captured pieces
+      if (captures && captures.length) {
+        for (const cap of captures) {
+          board[cap.row][cap.col] = null;
+        }
+      }
+
+      // Promote to king
+      if (!piece.king) {
+        if (piece.player === 'red' && toRow === 0) piece.king = true;
+        if (piece.player === 'black' && toRow === BOARD_SIZE - 1) piece.king = true;
+      }
+
+      renderBoard();
+
+      setTimeout(resolve, 300);
+    });
+  }
+
+  async function processTurn(fromRow, fromCol, toRow, toCol, captures) {
+    await makeMove(fromRow, fromCol, toRow, toCol, captures);
+
+    // Check for multi-capture continuation (only for current player)
+    if (captures.length > 0) {
+      // If piece can capture again from new spot, same player continues
+      const piece = board[toRow][toCol];
+      const furtherCaptures = getValidMovesForPiece(toRow, toCol, board, true);
+      if (furtherCaptures.length > 0) {
+        // Select the same piece and highlight next captures
+        selectedPiece = { row: toRow, col: toCol };
+        validMoves = furtherCaptures;
+        renderBoard();
+        messageEl.textContent = `${capitalize(currentPlayer)} must continue capturing!`;
+        return;
+      }
+    }
+
+    // Switch player
+    currentPlayer = currentPlayer === 'red' ? 'black' : 'red';
+    selectedPiece = null;
+    validMoves = [];
+
+    renderBoard();
+    messageEl.textContent = '';
+
+    checkGameOver();
+
+    // If single player and AI turn, run AI move
+    if (mode === 'single' && currentPlayer === 'black') {
+      await delay(300);
+      await aiMove();
+    }
+  }
+
+  async function squareClick(row, col) {
+    if (mode === 'single' && currentPlayer === 'black') {
+      // It's AI turn, ignore clicks
+      return;
+    }
+
+    const piece = board[row][col];
+
+    if (selectedPiece) {
+      // Check if clicked on a valid move
+      const move = validMoves.find(m => m.row === row && m.col === col);
+      if (move) {
+        await processTurn(selectedPiece.row, selectedPiece.col, row, col, move.captures);
+        return;
+      }
+      // Clicked somewhere else - reset selection if possible
+      if (piece && piece.player === currentPlayer) {
+        selectedPiece = { row, col };
+        const mustCapture = playerHasCaptureMoves(currentPlayer);
+        validMoves = getValidMovesForPiece(row, col, board, mustCapture);
+        renderBoard();
+        return;
+      }
+      selectedPiece = null;
+      validMoves = [];
+      renderBoard();
+      return;
+    } else {
+      // Select a piece to move
+      if (piece && piece.player === currentPlayer) {
+        const mustCapture = playerHasCaptureMoves(currentPlayer);
+        validMoves = getValidMovesForPiece(row, col, board, mustCapture);
+        if (validMoves.length > 0) {
+          selectedPiece = { row, col };
+          renderBoard();
+        }
+      }
+    }
+  }
+
+  async function aiMove() {
+    const { mustCapture, moves } = getAllValidMoves(currentPlayer, board);
+    if (moves.length === 0) {
+      messageEl.textContent = `${capitalize(currentPlayer)} has no moves! Game over.`;
+      await delay(500);
+      onGameOver(currentPlayer === 'red' ? 'black' : 'red');
+      return;
+    }
+
+    let chosenMove;
+
+    if (isFirstAIMove) {
+      isFirstAIMove = false;
+      // First AI move: completely random dice roll
+      const pieceIndex = Math.floor(Math.random() * moves.length);
+      const pieceMove = moves[pieceIndex];
+      const moveIndex = Math.floor(Math.random() * pieceMove.to.length);
+      chosenMove = { from: pieceMove.from, to: pieceMove.to[moveIndex] };
+    } else {
+      // AI moves based on difficulty level
+      if (currentLevel === 1) {
+        // Level 1: Random move
+        const pieceIndex = Math.floor(Math.random() * moves.length);
+        const pieceMove = moves[pieceIndex];
+        const moveIndex = Math.floor(Math.random() * pieceMove.to.length);
+        chosenMove = { from: pieceMove.from, to: pieceMove.to[moveIndex] };
+      } else {
+        // Higher levels: try to capture if possible, else longest moves
+        const captureMoves = moves.filter(pm => pm.to.some(m => m.captures.length > 0));
+        const pool = captureMoves.length > 0 ? captureMoves : moves;
+        // Sort by number of captures descending
+        pool.sort((a, b) => {
+          const maxCapA = Math.max(...a.to.map(m => m.captures.length));
+          const maxCapB = Math.max(...b.to.map(m => m.captures.length));
+          return maxCapB - maxCapA;
+        });
+        const pieceMove = pool[0];
+        const captureMove = pieceMove.to.find(m => m.captures.length > 0);
+        chosenMove = {
+          from: pieceMove.from,
+          to: captureMove || pieceMove.to[0],
+        };
+      }
+    }
+
+    await delay(500);
+    await processTurn(chosenMove.from.row, chosenMove.from.col, chosenMove.to.row, chosenMove.to.col, chosenMove.to.captures);
+  }
+
+  function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  function checkGameOver() {
+    const redMoves = getAllValidMoves('red').moves.length;
+    const blackMoves = getAllValidMoves('black').moves.length;
+    const redPieces = countPieces('red');
+    const blackPieces = countPieces('black');
+
+    if (redPieces === 0 || redMoves === 0) {
+      onGameOver('black');
+      return true;
+    }
+    if (blackPieces === 0 || blackMoves === 0) {
+      onGameOver('red');
+      return true;
+    }
+    return false;
+  }
+
+  function countPieces(player) {
+    let count = 0;
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        const piece = board[r][c];
+        if (piece && piece.player === player) count++;
+      }
+    }
+    return count;
+  }
+
+  function onGameOver(winner) {
+    messageEl.textContent = `Game Over! ${capitalize(winner)} wins!`;
+    statusMessage.textContent = '';
+
+    if (mode === 'single' && winner === 'red') {
+      // Player won - unlock next level if any
+      if (currentLevel < MAX_LEVEL) {
+        levelsCompleted[currentLevel] = true;
+        localStorage.setItem('levelsCompleted', JSON.stringify(levelsCompleted));
+        unlockLevels();
+        statusMessage.textContent = `Level ${currentLevel} complete! You unlocked level ${currentLevel + 1}.`;
+      } else {
+        statusMessage.textContent = `Congratulations! You completed all levels!`;
+      }
+    }
+  }
+
+  function unlockLevels() {
+    for (let lvl = 1; lvl <= MAX_LEVEL; lvl++) {
+      const option = levelSelect.querySelector(`option[value="${lvl}"]`);
+      if (lvl === 1 || levelsCompleted[lvl - 1]) {
+        option.disabled = false;
+      } else {
+        option.disabled = true;
+      }
+    }
+  }
+
+  function setupLevels() {
+    levelSelect.innerHTML = '';
+    for (let i = 1; i <= MAX_LEVEL; i++) {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = `Level ${i}`;
+      levelSelect.appendChild(opt);
+    }
+    unlockLevels();
+
+    // Load saved current level or default to 1
+    const savedLevel = parseInt(localStorage.getItem('currentLevel'), 10);
+    currentLevel = savedLevel && savedLevel >= 1 && savedLevel <= MAX_LEVEL ? savedLevel : 1;
+    levelSelect.value = currentLevel;
+  }
+
+  function changeLevel(level) {
+    currentLevel = level;
+    localStorage.setItem('currentLevel', currentLevel);
+    resetGame();
+  }
+
+  function resetGame() {
+    initBoard();
+    currentPlayer = 'red';
+    selectedPiece = null;
+    validMoves = [];
+    isFirstAIMove = true;
+    messageEl.textContent = '';
+    renderBoard();
+
+    // If mode is single and AI starts first (if currentPlayer black)
+    if (mode === 'single' && currentPlayer === 'black') {
+      aiMove();
+    }
+  }
+
+  // Init & Events
+  modeRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+      mode = document.querySelector('input[name="mode"]:checked').value;
+      // Show/hide level selector
+      document.getElementById('levelSelectContainer').style.display = mode === 'single' ? 'inline-block' : 'none';
+      resetGame();
+    });
+  });
+
+  levelSelect.addEventListener('change', () => {
+    const lvl = parseInt(levelSelect.value, 10);
+    if (lvl <= 1 || levelsCompleted[lvl - 1]) {
+      changeLevel(lvl);
+    } else {
+      // Prevent changing to locked level
+      alert(`You must complete level ${lvl - 1} first.`);
+      levelSelect.value = currentLevel;
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    resetGame();
+  });
+
+  // Initialize
+  setupLevels();
+  if (mode === 'single') {
+    resetGame();
+  } else {
+    // Two players mode hides levels
+    document.getElementById('levelSelectContainer').style.display = 'none';
+    initBoard();
+    renderBoard();
+  }
+
+</script>
+
+</body>
+</html>

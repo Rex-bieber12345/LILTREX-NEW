@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <cite><title>Log On to multipurpose site</title></cite>
+<link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  </head>
+<body>
+
+  <!-- User Form -->
+  <form class="form-section" id="userForm" aria-label="form" onsubmit="submitUser(event)" autocomplete="off">
+    <h1><i class="fas fa-right-to-bracket"></i>LOG-ON</h1>
+
+    <div class="inputGroup">
+      <label for="userName">Name:</label>
+      <i class="fas fa-user icon"></i>
+      <input class="input" type="text" id="userName" name="userName" placeholder="Enter name..." required>
+    </div>
+
+    <div class="inputGroup">
+      <label for="userAge">Age:</label>
+      <i class="fas fa-calendar icon"></i>
+      <input class="input" type="number" id="userAge" name="userAge" placeholder="Enter age..." required>
+    </div>
+
+    <div class="inputGroup">
+      <label for="userGender">Gender:</label>
+      <i class="fas fa-venus-mars icon"></i>
+      <select class="input" id="userGender" name="userGender" required>
+        <option disabled selected>SELECT YOUR GENDER</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+      </select>
+    </div>
+
+    <div class="inputGroup">
+      <label for="userEmail">Email:</label>
+      <i class="fas fa-envelope icon"></i>
+      <input class="input" type="email" id="userEmail" name="userEmail" placeholder="Enter email..." required>
+    </div>
+
+    <button type="submit">Submit</button>
+  </form>
+
+  <!-- Link to Admin Login Page -->
+  <div class="admin-link">
+    <a href="admin.html"><i class="fas fa-user-shield"></i> ADMIN LOGIN</a>
+  </div>
+
+  <script>
+    function submitUser(event) {
+      event.preventDefault();
+
+      const name = event.target.userName.value.trim();
+      const age = event.target.userAge.value.trim();
+      const gender = event.target.userGender.value;
+      const email = event.target.userEmail.value.trim().toLowerCase();
+
+      let users = JSON.parse(localStorage.getItem('users')) || [];
+
+      if (users.some(u => u.email === email)) {
+        alert('This email is already registered.');
+        return;
+      }
+
+      const user = {
+        name,
+        age,
+        gender,
+        email,
+        status: 'pending'
+      };
+
+      users.push(user);
+      localStorage.setItem('users', JSON.stringify(users));
+      localStorage.setItem('currentUser', JSON.stringify(user)); // Save current user info
+
+      alert('User signed in successfully! Await admin approval.');
+      event.target.reset();
+
+      window.location.href = 'index1.html'; // Redirect after sign in
+    }
+  </script>
+
+</body>
+</html>

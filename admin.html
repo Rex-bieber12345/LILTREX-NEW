@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Login</title>
+<link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  
+</head>
+<body>
+
+  <div class="admin-login">
+    <h2><i class="fas fa-lock"></i> Admin Login</h2>
+
+    <input type="password" id="adminPassword" placeholder="Enter Admin Password" autocomplete="off" />
+    <div id="capsWarning" class="capslock-warning">Caps Lock is ON!</div>
+
+    <input type="text" id="adminCode" placeholder="Enter Access Code" autocomplete="off" />
+
+    <button onclick="loginAdmin()">Enter Admin Panel</button>
+
+    <div class="fallback-section" id="fallbackSection">
+      <label for="fallbackInput">Verify Yourself (One thing you like):</label>
+      <input type="text" id="fallbackInput" autocomplete="off" />
+      <button onclick="fallbackLogin()">Verify</button>
+    </div>
+  </div>
+
+  <script>
+    const PASSWORD = "PASSWORD";
+    const ACCESS_CODE = "ADMIN";
+    const fallbackWords = ["football", "blibo", "gals", "mum", "sex", "erin", "name", "face","rexford","erin","eliana","girls"];
+
+    const capsWarning = document.getElementById("capsWarning");
+    const passwordInput = document.getElementById("adminPassword");
+
+    passwordInput.addEventListener("keydown", function(event) {
+      if (event.getModifierState("CapsLock")) {
+        capsWarning.style.display = "block";
+      } else {
+        capsWarning.style.display = "none";
+      }
+    });
+
+    passwordInput.addEventListener("keyup", function(event) {
+      if (event.getModifierState("CapsLock")) {
+        capsWarning.style.display = "block";
+      } else {
+        capsWarning.style.display = "none";
+      }
+    });
+
+    function loginAdmin() {
+      const pass = document.getElementById("adminPassword").value;
+      const code = document.getElementById("adminCode").value;
+
+      if (pass === PASSWORD && code === ACCESS_CODE) {
+        alert("Access Granted! Redirecting to admin panel...");
+        window.location.href = "admin-panel.html"; 
+      } else {
+        alert("Wrong credentials! Please verify yourself.");
+        document.getElementById("fallbackSection").style.display = "block";
+      }
+    }
+
+    function fallbackLogin() {
+      const val = document.getElementById("fallbackInput").value.trim().toLowerCase();
+      if (fallbackWords.includes(val)) {
+        alert("Fallback verification successful! Redirecting to admin panel...");
+        window.location.href = "admin-panel.html";
+      } else {
+        alert("Verification failed! Try again.");
+      }
+    }
+  </script>
+
+</body>
+</html>

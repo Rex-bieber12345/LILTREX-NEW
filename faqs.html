@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Suggestion Page</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f7fa;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #2c3e50;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    input, textarea {
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background-color: #3498db;
+      color: #fff;
+      padding: 12px;
+      font-size: 18px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    .faqs {
+      margin-top: 50px;
+    }
+
+    .faq {
+      margin-bottom: 15px;
+      border-left: 4px solid #3498db;
+      padding-left: 15px;
+      cursor: pointer;
+      background: #f0f8ff;
+      border-radius: 5px;
+      padding: 10px 15px;
+      transition: background 0.3s;
+    }
+
+    .faq:hover {
+      background: #e0f2ff;
+    }
+
+    .faq-title {
+      font-size: 18px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .faq-content {
+      display: none;
+      margin-top: 10px;
+      color: #444;
+      font-size: 15px;
+    }
+
+    .icon {
+      color: #3498db;
+      margin-right: 8px;
+    }
+
+    /* Success Popup */
+    .success-message {
+      display: none;
+      text-align: center;
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 6px;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    iframe {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1><i class="fas fa-lightbulb icon"></i> Submit Your Suggestion</h1>
+
+    <form id="suggestion-form" action="https://formsubmit.io/send/gladysdarkwah1978@gmail.com" method="POST" target="hidden_iframe">
+      <input type="hidden" name="_captcha" value="false" />
+      <input type="hidden" name="_iframe" value="true" />
+
+      <input type="text" name="name" placeholder="Your Name" required />
+      <input type="email" name="email" placeholder="Your Email" required />
+      <textarea name="suggestion" placeholder="Your Suggestion" rows="5" required></textarea>
+      <button type="submit"><i class="fas fa-paper-plane icon"></i> Send Suggestion</button>
+    </form>
+
+    <div id="success" class="success-message">
+      <i class="fas fa-check-circle"></i> Your message has been sent successfully!
+    </div>
+
+    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="formSubmitted()"></iframe>
+
+    <div class="faqs">
+      <h2><i class="fas fa-question-circle icon"></i> Frequently Asked Questions</h2>
+
+      <div class="faq" onclick="toggleFAQ(this)">
+        <div class="faq-title">
+          <span><i class="fas fa-comment icon"></i>What kind of suggestions can I submit?</span>
+          <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="faq-content">
+          <p>Anything you feel could help us grow — feature ideas, UI improvements, bug reports, or general feedback!</p>
+        </div>
+      </div>
+
+      <div class="faq" onclick="toggleFAQ(this)">
+        <div class="faq-title">
+          <span><i class="fas fa-reply icon"></i>Will I get a response?</span>
+          <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="faq-content">
+          <p>Absolutely. If you leave a valid email, we’ll respond to meaningful feedback within 48 hours.</p>
+        </div>
+      </div>
+
+      <div class="faq" onclick="toggleFAQ(this)">
+        <div class="faq-title">
+          <span><i class="fas fa-shield-alt icon"></i>Is my data safe?</span>
+          <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="faq-content">
+          <p>Yes! Your information is sent directly to our inbox using encrypted methods. We never share or store data.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Toggle FAQ
+    function toggleFAQ(faqElement) {
+      const content = faqElement.querySelector('.faq-content');
+      const icon = faqElement.querySelector('.faq-title i.fas.fa-chevron-down');
+
+      if (content.style.display === "block") {
+        content.style.display = "none";
+        icon.classList.remove("fa-chevron-up");
+        icon.classList.add("fa-chevron-down");
+      } else {
+        content.style.display = "block";
+        icon.classList.remove("fa-chevron-down");
+        icon.classList.add("fa-chevron-up");
+      }
+    }
+
+    // Handle form success
+    let submitted = false;
+
+    document.getElementById("suggestion-form").addEventListener("submit", function () {
+      submitted = true;
+    });
+
+    function formSubmitted() {
+      if (submitted) {
+        document.getElementById("success").style.display = "block";
+        document.getElementById("suggestion-form").reset();
+        submitted = false;
+      }
+    }
+  </script>
+
+</body>
+</html>

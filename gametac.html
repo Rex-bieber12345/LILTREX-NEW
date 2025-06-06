@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tic Tac Toe with Real-Time Payment AI Hint</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #222;
+    color: #eee;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px;
+  }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(3, 80px);
+    grid-template-rows: repeat(3, 80px);
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+  .cell {
+    width: 80px;
+    height: 80px;
+    background: #444;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3rem;
+    cursor: pointer;
+    border-radius: 10px;
+    user-select: none;
+  }
+  .cell.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  #info {
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+  }
+  #reset, #payBtn {
+    padding: 10px 20px;
+    margin: 5px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  #reset {
+    background-color: #e74c3c;
+    color: white;
+  }
+  #payBtn {
+    background-color: #3498db;
+    color: white;
+  }
+  #payBtn:disabled {
+    background-color: #7f8c8d;
+    cursor: not-allowed;
+  }
+</style>
+</head>
+<body>
+
+<h1>Tic Tac Toe</h1>
+<div id="board"></div>
+<div id="info">Current turn: <span id="currentPlayer">X</span></div>
+<button id="payBtn">Pay to Unlock AI Hint (MTN: 0531611470)</button>
+<button id="reset">Reset Game</button>
+
+<script>
+  const boardEl = document.getElementById('board');
+  const currentPlayerEl = document.getElementById('currentPlayer');
+  const resetBtn = document.getElementById('reset');
+  const payBtn = document.getElementById('payBtn');
+
+  let board = Array(9).fill(null);
+  let currentPlayer = 'X';
+  let gameOver = false;
+  let aiHintUnlocked = false;
+  let paymentTxId = null;
+
+  function renderBoard() {
+    boardEl.innerHTML = '';
+    board.forEach((cell, i) => {
+      const cellEl = document.createElement('div');
+      cellEl.className = 'cell';
+      if (gameOver || cell !== null) cellEl.classList.add('disabled');
+      cellEl.textContent = cell ? cell : '';
+      cellEl.addEventListener('click', () => cellClick(i));
+      boardEl.appendChild(cellEl);
+    });
+    currentPlayerEl.textContent = currentPlayer;
+  }
+
+  function cellClick(index) {
+    if (gameOver || board[index] !== null) return;
+    board[index] = currentPlayer;
+    if (checkWin(currentPlayer)) {
+      alert(currentPlayer + ' wins!');
+      gameOver = true;
+    } else if (board.every(c => c !== null)) {
+      alert('Draw!');
+      gameOver = true;
+      setTimeout(resetGame, 1500);
+    } else {
+      switchPlayer();
+      if (currentPlayer === 'O') {
+        setTimeout(aiMove, 500);
+      }
+    }
+    renderBoard();
+  }
+
+  function switchPlayer() {
+    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+    currentPlayerEl.textContent = currentPlayer;
+  }
+
+  function checkWin(player) {
+    const wins = [
+      [0,1,2], [3,4,5], [6,7,8], // rows
+      [0,3,6], [1,4,7], [2,5,8], // cols
+      [0,4,8], [2,4,6]           // diagonals
+    ];
+    return wins.some(combo => combo.every(i => board[i] === player));
+  }
+
+  // Simple AI: picks random empty cell
+  function aiMove() {
+    if (gameOver) return;
+
+    if (aiHintUnlocked) {
+      // If AI hint unlocked, use best move from minimax
+      const best = findBestMove(board, 'O');
+      board[best] = 'O';
+    } else {
+      // Else random move
+      const empty = board.map((v,i) => v === null ? i : null).filter(i => i !== null);
+      const move = empty[Math.floor(Math.random() * empty.length)];
+      board[move] = 'O';
+    }
+
+    if (checkWin('O')) {
+      alert('O wins!');
+      gameOver = true;
+    } else if (board.every(c => c !== null)) {
+      alert('Draw!');
+      gameOver = true;
+      setTimeout(resetGame, 1500);
+    } else {
+      switchPlayer();
+    }
+    renderBoard();
+  }
+
+  // Minimax for best AI hint move
+  function findBestMove(board, player) {
+    const opponent = player === 'X' ? 'O' : 'X';
+
+    function minimax(newBoard, isMax) {
+      if (checkWinFor(newBoard, 'O')) return { score: 10 };
+      if (checkWinFor(newBoard, 'X')) return { score: -10 };
+      if (newBoard.every(c => c !== null)) return { score: 0 };
+
+      const moves = [];
+
+      for (let i = 0; i < newBoard.length; i++) {
+        if (newBoard[i] === null) {
+          let move = {};
+          move.index = i;
+          newBoard[i] = isMax ? 'O' : 'X';
+
+          let result = minimax(newBoard, !isMax);
+          move.score = result.score;
+
+          newBoard[i] = null;
+          moves.push(move);
+        }
+      }
+
+      let bestMove;
+      if (isMax) {
+        let bestScore = -Infinity;
+        for (const move of moves) {
+          if (move.score > bestScore) {
+            bestScore = move.score;
+            bestMove = move;
+          }
+        }
+      } else {
+        let bestScore = Infinity;
+        for (const move of moves) {
+          if (move.score < bestScore) {
+            bestScore = move.score;
+            bestMove = move;
+          }
+        }
+      }
+      return bestMove;
+    }
+
+    function checkWinFor(b, p) {
+      const wins = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+      ];
+      return wins.some(combo => combo.every(i => b[i] === p));
+    }
+
+    return minimax(board, true).index;
+  }
+
+  function resetGame() {
+    board = Array(9).fill(null);
+    currentPlayer = 'X';
+    gameOver = false;
+    renderBoard();
+  }
+
+  // --- Payment + AI hint unlock logic ---
+
+  function updateHintButton() {
+    if (aiHintUnlocked) {
+      payBtn.textContent = 'AI Hint Unlocked! Enjoy!';
+      payBtn.disabled = true;
+    } else {
+      payBtn.textContent = 'Pay to Unlock AI Hint (MTN: 0531611470)';
+      payBtn.disabled = false;
+    }
+  }
+
+  payBtn.addEventListener('click', async () => {
+    if (aiHintUnlocked) {
+      alert('AI hints already unlocked. Enjoy!');
+      return;
+    }
+
+    payBtn.disabled = true;
+    payBtn.textContent = 'Processing payment...';
+
+    try {
+      // Initiate payment
+      const res = await fetch('http://localhost:3000/api/initiate-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error('Payment initiation failed');
+
+      paymentTxId = data.txId;
+      alert(`Please pay MTN Mobile Money to 0531611470 and wait for confirmation.\nTransaction ID: ${paymentTxId}`);
+
+      // Poll payment status every 3 seconds, max 1 min
+      let attempts = 20;
+      let paid = false;
+
+      while (attempts > 0) {
+        const statusRes = await fetch(`http://localhost:3000/api/payment-status/${paymentTxId}`);
+        const statusData = await statusRes.json();
+        if (statusData.paid) {
+          paid = true;
+          break;
+        }
+        attempts--;
+        await new Promise(r => setTimeout(r, 3000));
+      }
+
+      if (paid) {
+        aiHintUnlocked = true;
+        alert('Payment confirmed! AI hints unlocked.');
+        updateHintButton();
+      } else {
+        alert('Payment not confirmed within 1 minute. Please try again.');
+      }
+    } catch (err) {
+      alert('Error processing payment: ' + err.message);
+    }
+
+    if (!aiHintUnlocked) {
+      payBtn.disabled = false;
+      payBtn.textContent = 'Pay to Unlock AI Hint (MTN: 0531611470)';
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    resetGame();
+    if (!aiHintUnlocked) {
+      updateHintButton();
+    }
+  });
+
+  // Init
+  updateHintButton();
+  renderBoard();
+
+</script>
+</body>
+</html>

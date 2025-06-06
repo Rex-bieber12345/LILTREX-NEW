@@ -1,0 +1,109 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f9;
+    margin: 0;
+    padding: 20px;
+  }
+
+  .container {
+    max-width: 800px;
+    margin: 50px auto;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+  }
+
+  h1 {
+    text-align: center;
+    color: #007bff;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+
+  #searchInput {
+    padding: 8px;
+    width: 100%;
+    max-width: 300px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    margin-bottom: 15px;
+    float: right;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    clear: both;
+  }
+
+  th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+  }
+
+  th {
+    background-color: #007bff;
+    color: white;
+  }
+
+  button {
+    padding: 6px 10px;
+    font-size: 14px;
+    margin: 0 3px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .approveBtn {
+    background-color: #28a745;
+    color: white;
+  }
+
+  .approveBtn:hover {
+    background-color: #218838;
+  }
+
+  .rejectBtn {
+    background-color: #dc3545;
+    color: white;
+  }
+
+  .rejectBtn:hover {
+    background-color: #b02a37;
+  }
+
+  #clearBtn {
+    background-color: #dc3545;
+    color: white;
+    padding: 10px 15px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    border: none;
+  }
+
+  #clearBtn:hover {
+    background-color: #b02a37;
+  }
+
+  #logoutBtn {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    border: none;
+    margin-left: 10px;
+  }
+
+  #logoutBtn:hover {
+    background-color: #0056b3;
+  }

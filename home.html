@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Home</title>
+<link rel="stylesheet" href="home.css">
+</head>
+<body>
+
+  <div class="navbar">
+    <a href="#" class="navbrand">Multipurpose Site</a>
+
+    <div style="display:flex; align-items:center;">
+      <div class="menu-btn" id="menuBtn" title="Menu">&#9776;</div>
+      <img id="userPic" src="" alt="User Picture" />
+    </div>
+
+    <nav class="menu" id="menu" aria-label="User menu">
+      <a href="#"><i class="fas fa-envelope"></i> Message</a>
+      <a href="#"><i class="fas fa-info-circle"></i> About</a>
+      <button id="logoutBtn" aria-label="Logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </nav>
+  </div>
+
+  <div class="content-wrapper">
+    <h1 class="greeting" id="greeting"><i class="fas fa-user-circle"></i> Welcome!</h1>
+    <p id="userStatusMessage" class="not-approved">Status: Not Approved</p>
+
+    <div id="postBox" style="display:none;">
+      <label for="userPost"><i class="fas fa-pen-nib"></i> Add Your Content (Verified users only):</label>
+      <textarea id="userPost" placeholder="Write something cool..."></textarea>
+      <button onclick="submitContent()" aria-label="Post content"><i class="fas fa-paper-plane"></i> Post</button>
+    </div>
+  </div>
+
+<script>
+  // Load user data from localStorage (simulate logged in user)
+  const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {
+    name: "Guest",
+    status: "not approved",
+    pic: ""
+  };
+
+  const greeting = document.getElementById('greeting');
+  const statusMessage = document.getElementById('userStatusMessage');
+  const userPic = document.getElementById('userPic');
+  const menuBtn = document.getElementById('menuBtn');
+  const menu = document.getElementById('menu');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const postBox = document.getElementById('postBox');
+
+  // Redirect if not logged in
+  if (!currentUser || currentUser.name === "Guest") {
+    alert("Please login first!");
+    window.location.href = "index.html"; // change this to your login page
+  } else {
+    greeting.innerHTML = `<i class="fas fa-user-circle"></i> Welcome, ${currentUser.name}!`;
+
+    if (currentUser.pic && currentUser.pic.trim() !== "") {
+      userPic.src = currentUser.pic;
+    } else {
+      userPic.src = "https://i.pravatar.cc/100"; // fallback avatar
+    }
+
+    if (currentUser.status === "approved") {
+      statusMessage.textContent = "Status: Approved ✔️";
+      statusMessage.classList.remove('not-approved');
+      statusMessage.classList.add('approved');
+      postBox.style.display = "block";
+    } else {
+      statusMessage.textContent = "Status: Not Approved ❌";
+      statusMessage.classList.remove('approved');
+      statusMessage.classList.add('not-approved');
+      postBox.style.display = "none";
+    }
+  }
+
+  // Hamburger toggle animation
+  menuBtn.addEventListener('click', () => {
+    menu.classList.toggle('show');
+    menuBtn.classList.toggle('active');
+  });
+
+  // Close menu if click outside
+  window.addEventListener('click', e => {
+    if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
+      menu.classList.remove('show');
+      menuBtn.classList.remove('active');
+    }
+  });
+
+  // Logout action
+  logoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('currentUser');
+    alert("You have logged out.");
+    window.close(); // Try closing tab (may be blocked)
+    window.location.href = "index.html"; // fallback redirect to login
+  });
+
+  // Post content handler
+  function submitContent() {
+    if (currentUser.status !== "approved") {
+      alert("You are not approved to post.");
+      return;
+    }
+    const postText = document.getElementById('userPost').value.trim();
+    if (!postText) {
+      alert("Please write something before posting.");
+      return;
+    }
+    alert(`Content posted:\n${postText}`);
+    document.getElementById('userPost').value = "";
+    // TODO: save post to backend or localStorage here
+  }
+</script>
+
+</body>
+</html>
