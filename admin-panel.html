@@ -4,16 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Admin Panel</title>
-<link rel="stylesheet" href="admin-panel.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  </head>
+  <link rel="stylesheet" href="admin-panel.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  />
+</head>
 <body>
-
   <div class="container">
     <h1><i class="fas fa-user-shield"></i> Admin Panel</h1>
 
     <!-- 🔍 Search Box -->
-    <input type="text" id="searchInput" placeholder="Search by name, email, or status..." />
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="Search by name, email, or status..."
+    />
 
     <table id="usersTable">
       <thead>
@@ -38,18 +44,18 @@
   <!-- EmailJS SDK -->
   <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
   <script>
-    // Initialize EmailJS - Replace with your actual user ID
-    (function(){
-      emailjs.init("YOUR_EMAILJS_USER_ID");
+    // Initialize EmailJS with your public key
+    (function () {
+      emailjs.init("8lvUO5fQVdMnDSae6");
     })();
 
-    function loadUsers(searchTerm = '') {
-      const users = JSON.parse(localStorage.getItem('users')) || [];
-      const tbody = document.querySelector('#usersTable tbody');
-      tbody.innerHTML = '';
+    function loadUsers(searchTerm = "") {
+      const users = JSON.parse(localStorage.getItem("users")) || [];
+      const tbody = document.querySelector("#usersTable tbody");
+      tbody.innerHTML = "";
 
-      const filteredUsers = users.filter(user => {
-        const values = [user.name, user.email, user.status].join(' ').toLowerCase();
+      const filteredUsers = users.filter((user) => {
+        const values = [user.name, user.email, user.status].join(" ").toLowerCase();
         return values.includes(searchTerm.toLowerCase());
       });
 
@@ -59,90 +65,104 @@
       }
 
       filteredUsers.forEach((user, index) => {
-        const tr = document.createElement('tr');
-        const statusColor = user.status === 'approved' ? 'green' : user.status === 'rejected' ? 'red' : 'gray';
+        const tr = document.createElement("tr");
+        const statusColor =
+          user.status === "approved"
+            ? "green"
+            : user.status === "rejected"
+            ? "red"
+            : "gray";
 
         tr.innerHTML = `
           <td>${user.name}</td>
           <td>${user.age}</td>
           <td>${user.gender.charAt(0).toUpperCase() + user.gender.slice(1)}</td>
           <td>${user.email}</td>
-          <td style="color:${statusColor}; font-weight:bold;">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</td>
+          <td style="color:${statusColor}; font-weight:bold;">${
+          user.status.charAt(0).toUpperCase() + user.status.slice(1)
+        }</td>
           <td>
-            ${user.status === 'pending' 
-              ? `<button class="approveBtn" onclick="approveUser(${index})">Approve</button>
-                 <button class="rejectBtn" onclick="rejectUser(${index})">Reject</button>` 
-              : '-'}
+            ${
+              user.status === "pending"
+                ? `<button class="approveBtn" onclick="approveUser(${index})">Approve</button>
+                   <button class="rejectBtn" onclick="rejectUser(${index})">Reject</button>`
+                : "-"
+            }
           </td>
         `;
         tbody.appendChild(tr);
       });
     }
 
+    // Update user status helper
+    function updateUserStatus(index, newStatus) {
+      const users = JSON.parse(localStorage.getItem("users")) || [];
+      const user = users[index];
+      if (!user) return null;
+
+      user.status = newStatus;
+      users[index] = user;
+      localStorage.setItem("users", JSON.stringify(users));
+      loadUsers(document.getElementById("searchInput").value);
+
+      return user;
+    }
+
+    // Approve user & send approval email
     function approveUser(index) {
-      let users = JSON.parse(localStorage.getItem('users')) || [];
-      const user = users[index];
-
-      if (!user) return;
-
-      user.status = 'approved';
-
-      users[index] = user;
-      localStorage.setItem('users', JSON.stringify(users));
-      loadUsers(document.getElementById('searchInput').value);
-
-      sendApprovalEmail(user);
+      const user = updateUserStatus(index, "approved");
+      if (user) sendApprovalEmail(user);
     }
 
+    // Reject user by removing them (no email)
     function rejectUser(index) {
-      let users = JSON.parse(localStorage.getItem('users')) || [];
+      let users = JSON.parse(localStorage.getItem("users")) || [];
       const user = users[index];
-
       if (!user) return;
 
-      user.status = 'rejected';
+      users.splice(index, 1); // Remove user from array
+      localStorage.setItem("users", JSON.stringify(users));
+      loadUsers(document.getElementById("searchInput").value);
 
-      users[index] = user;
-      localStorage.setItem('users', JSON.stringify(users));
-      loadUsers(document.getElementById('searchInput').value);
-
-      alert(`User ${user.name} has been rejected.`);
+      alert(`User ${user.name} has been removed.`);
     }
 
+    // Send approval email via EmailJS template_oiwvn7s
     function sendApprovalEmail(user) {
       const templateParams = {
         user_name: user.name,
-        user_email: user.email
+        user_email: user.email,
       };
 
-      // Replace with your EmailJS service and template IDs
-      emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
-        .then(function(response) {
-          alert(`Approval email sent to ${user.email}`);
-        }, function(error) {
-          alert("Failed to send email: " + error.text);
-        });
+      emailjs
+        .send("service_n3heucz", "template_oiwvn7s", templateParams)
+        .then(
+          (response) => {
+            alert(`Approval email sent to ${user.email}`);
+          },
+          (error) => {
+            alert("Failed to send email: " + error.text);
+          }
+        );
     }
 
-    document.getElementById('clearBtn').addEventListener('click', () => {
+    document.getElementById("clearBtn").addEventListener("click", () => {
       if (confirm("Are you sure you want to clear all users?")) {
-        localStorage.removeItem('users');
+        localStorage.removeItem("users");
         loadUsers();
       }
     });
 
-    document.getElementById('logoutBtn').addEventListener('click', () => {
+    document.getElementById("logoutBtn").addEventListener("click", () => {
       window.location.href = "admin.html";
     });
 
-    // 🔍 Add search listener
-    document.getElementById('searchInput').addEventListener('input', function () {
+    document.getElementById("searchInput").addEventListener("input", function () {
       loadUsers(this.value);
     });
 
     // Load users on page load
     loadUsers();
   </script>
-
 </body>
 </html>
