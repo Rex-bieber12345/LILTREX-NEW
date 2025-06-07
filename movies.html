@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Movie Hub</title>
   <style>
+    /* [CSS remains unchanged — truncated for brevity] */
     body {
       font-family: Arial, sans-serif;
       background-color: #121212;
@@ -75,7 +76,6 @@
       background-color: #b00710;
     }
 
-    /* Drag and drop zone */
     #dropZone {
       border: 2px dashed #555;
       border-radius: 10px;
@@ -195,7 +195,6 @@
         <button type="submit">Add Movie</button>
       </form>
 
-      <!-- Drag and Drop Zone -->
       <div id="dropZone">Drag & Drop your .mp4 video here or click to select file</div>
       <input type="file" id="fileInput" accept="video/mp4" style="display:none" />
 
@@ -211,23 +210,59 @@
   </div>
 
   <script>
-    // DOM Elements
+    // === IndexedDB Setup ===
+    const DB_NAME = "movieHubDB";
+    const DB_STORE = "videos";
+    let db;
+
+    const openDB = () => {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onerror = () => reject("Failed to open IndexedDB");
+        request.onsuccess = () => {
+          db = request.result;
+          resolve(db);
+        };
+        request.onupgradeneeded = (e) => {
+          db = e.target.result;
+          db.createObjectStore(DB_STORE, { keyPath: "id" });
+        };
+      });
+    };
+
+    const saveVideoToDB = (id, file) => {
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, "readwrite");
+        const store = tx.objectStore(DB_STORE);
+        store.put({ id, file });
+        tx.oncomplete = resolve;
+        tx.onerror = reject;
+      });
+    };
+
+    const getVideoFromDB = (id) => {
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, "readonly");
+        const store = tx.objectStore(DB_STORE);
+        const request = store.get(id);
+        request.onsuccess = () => resolve(request.result?.file || null);
+        request.onerror = reject;
+      });
+    };
+
+    // === Main App Logic ===
     const moviesTab = document.getElementById("moviesTab");
     const downloadsTab = document.getElementById("downloadsTab");
     const moviesPage = document.getElementById("moviesPage");
     const downloadsPage = document.getElementById("downloadsPage");
-
     const videoForm = document.getElementById("videoForm");
     const titleInput = document.getElementById("movieTitle");
     const videoInput = document.getElementById("videoUrl");
     const gallery = document.getElementById("videoGallery");
     const downloadsList = document.getElementById("downloadsList");
-
-    // Drag and Drop Elements
     const dropZone = document.getElementById("dropZone");
     const fileInput = document.getElementById("fileInput");
 
-    // Tab Toggler
     moviesTab.onclick = () => {
       moviesTab.classList.add("active");
       downloadsTab.classList.remove("active");
@@ -243,7 +278,6 @@
       renderDownloads();
     };
 
-    // Storage Utilities
     function getMovies() {
       return JSON.parse(localStorage.getItem("movies")) || [];
     }
@@ -257,12 +291,11 @@
       return match ? match[1] : null;
     }
 
-    // Generate unique video ID
     function generateVideoId() {
       return 'vid-' + Math.random().toString(36).substr(2, 9);
     }
 
-    function createMovieCard(movie, index) {
+    async function createMovieCard(movie, index) {
       const card = document.createElement("div");
       card.className = "movie-card";
 
@@ -278,17 +311,23 @@
       const videoWrapper = document.createElement("div");
       videoWrapper.className = "video-wrapper";
 
-      if (movie.video.includes("youtube.com") || movie.video.includes("youtu.be")) {
+      if (movie.videoType === "youtube") {
         const id = extractYouTubeID(movie.video);
         if (id) {
-          videoWrapper.innerHTML = `<iframe id="${movie.videoId || ''}" src="https://www.youtube.com/embed/${id}" allowfullscreen></iframe>`;
+          videoWrapper.innerHTML = `<iframe src="https://www.youtube.com/embed/${id}" allowfullscreen></iframe>`;
         }
-      } else {
-        videoWrapper.innerHTML = `
-          <video id="${movie.videoId || ''}" controls>
-            <source src="${movie.video}" type="video/mp4">
-            Your browser does not support the video tag.
-          </video>`;
+      } else if (movie.videoType === "mp4") {
+        const blob = await getVideoFromDB(movie.videoId);
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          videoWrapper.innerHTML = `
+            <video controls>
+              <source src="${url}" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>`;
+        } else {
+          videoWrapper.innerHTML = `<p style="padding:10px;color:red;">Video not found.</p>`;
+        }
       }
 
       card.appendChild(deleteBtn);
@@ -298,12 +337,12 @@
       return card;
     }
 
-    function renderMovies(movies) {
+    async function renderMovies(movies) {
       gallery.innerHTML = "";
-      movies.forEach((movie, index) => {
-        const card = createMovieCard(movie, index);
+      for (let i = 0; i < movies.length; i++) {
+        const card = await createMovieCard(movies[i], i);
         gallery.appendChild(card);
-      });
+      }
     }
 
     function deleteMovie(index) {
@@ -326,108 +365,85 @@
       movies.forEach((movie) => {
         const li = document.createElement("li");
         li.innerHTML = `<strong>${movie.title}</strong><br/>` +
-          (movie.video.endsWith(".mp4")
-            ? `<a href="${movie.video}" download>Download .mp4</a>`
-            : `<span style="color:#aaa;">Streaming link only</span>`);
+          (movie.videoType === "mp4"
+            ? `<span style="color:#aaa;">Download unavailable (locally stored)</span>`
+            : `<a href="${movie.video}" target="_blank">Open Stream</a>`);
         downloadsList.appendChild(li);
       });
     }
 
-    // Add New Movie from form
     videoForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const title = titleInput.value.trim();
       const video = videoInput.value.trim();
-
       if (!title || !video) return;
 
       const movies = getMovies();
-
-      // Assign unique videoId for YouTube or .mp4 link from form
-      movies.push({ title, video, videoId: generateVideoId() });
+      movies.push({ title, video, videoType: "youtube", videoId: generateVideoId() });
       saveMovies(movies);
       renderMovies(movies);
-
-      // Reset form
       titleInput.value = "";
       videoInput.value = "";
     });
 
-    // Drag and drop handlers for the dropZone
     dropZone.addEventListener("dragover", (e) => {
       e.preventDefault();
       dropZone.classList.add("hover");
     });
 
-    dropZone.addEventListener("dragleave", (e) => {
+    dropZone.addEventListener("dragleave", () => {
       dropZone.classList.remove("hover");
     });
 
-    dropZone.addEventListener("drop", (e) => {
+    dropZone.addEventListener("drop", async (e) => {
       e.preventDefault();
       dropZone.classList.remove("hover");
 
-      const files = e.dataTransfer.files;
-      if (files.length === 0) return;
-
-      // Only accept .mp4 files
-      for (let file of files) {
-        if (file.type !== "video/mp4") {
-          alert("Only .mp4 files are accepted.");
-          return;
-        }
-      }
-
-      // Let user add title & confirm before adding to library
-      const file = files[0]; // only first file handled here
-
-      const userTitle = prompt("Enter a title for the dropped video file:", file.name.replace(/\.[^/.]+$/, ""));
-      if (!userTitle) {
-        alert("Video not added: title is required.");
+      const file = e.dataTransfer.files[0];
+      if (!file || file.type !== "video/mp4") {
+        alert("Only .mp4 files are accepted.");
         return;
       }
 
-      // Create blob URL for the dropped file
-      const blobUrl = URL.createObjectURL(file);
+      const title = prompt("Enter title for the video:", file.name.replace(/\.[^/.]+$/, ""));
+      if (!title) return;
 
-      // Add movie to localStorage with blob URL and unique videoId
+      const videoId = generateVideoId();
+      await saveVideoToDB(videoId, file);
+
       const movies = getMovies();
-      movies.push({ title: userTitle, video: blobUrl, videoId: generateVideoId() });
+      movies.push({ title, video: "", videoType: "mp4", videoId });
       saveMovies(movies);
       renderMovies(movies);
     });
 
-    // Support click to open file selector
     dropZone.addEventListener("click", () => fileInput.click());
 
-    // File input change handler (for selecting file instead of drag/drop)
-    fileInput.addEventListener("change", (e) => {
+    fileInput.addEventListener("change", async (e) => {
       const file = e.target.files[0];
-      if (!file) return;
-
-      if (file.type !== "video/mp4") {
+      if (!file || file.type !== "video/mp4") {
         alert("Only .mp4 files are accepted.");
         fileInput.value = "";
         return;
       }
 
-      const userTitle = prompt("Enter a title for the selected video file:", file.name.replace(/\.[^/.]+$/, ""));
-      if (!userTitle) {
-        alert("Video not added: title is required.");
+      const title = prompt("Enter a title for the selected video file:", file.name.replace(/\.[^/.]+$/, ""));
+      if (!title) {
         fileInput.value = "";
         return;
       }
 
-      const blobUrl = URL.createObjectURL(file);
+      const videoId = generateVideoId();
+      await saveVideoToDB(videoId, file);
+
       const movies = getMovies();
-      movies.push({ title: userTitle, video: blobUrl, videoId: generateVideoId() });
+      movies.push({ title, video: "", videoType: "mp4", videoId });
       saveMovies(movies);
       renderMovies(movies);
       fileInput.value = "";
     });
 
-    // Initial render
-    renderMovies(getMovies());
+    openDB().then(() => renderMovies(getMovies()));
   </script>
 </body>
 </html>
