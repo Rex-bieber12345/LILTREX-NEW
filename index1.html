@@ -2,105 +2,307 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Multipurpose site version 1.02</title>
-  <link rel="stylesheet" href="index1.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Multipurpose site</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* Reset */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #e2ecf9, #ffffff);
+      color: #222;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Main container */
+    .main-container {
+      display: flex;
+      flex-grow: 1;
+      position: relative;
+    }
+
+    /* Hamburger open button */
+    #open {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 28px;
+      padding: 12px 18px;
+      cursor: pointer;
+      z-index: 1100;
+      background-color: #1a73e8;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgb(26 115 232 / 0.3);
+      transition: background-color 0.3s, box-shadow 0.3s;
+      user-select: none;
+    }
+
+    #open:hover,
+    #open:focus {
+      background-color: #1558b0;
+      box-shadow: 0 6px 16px rgb(21 88 176 / 0.5);
+      outline: none;
+    }
+
+    /* Menu container */
+    nav.handburger {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 280px;
+      height: 100vh;
+      background: white;
+      border-radius: 0 12px 12px 0;
+      box-shadow: 3px 0 15px rgba(0,0,0,0.1);
+      padding: 30px 20px 40px;
+      transform: translateX(-100%);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+      z-index: 1200;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    nav.handburger.open {
+      transform: translateX(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Close button inside menu */
+    .close {
+      align-self: flex-end;
+      font-size: 28px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #555;
+      padding: 5px 12px 0 0;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      user-select: none;
+    }
+
+    nav.handburger.open .close {
+      opacity: 1;
+    }
+
+    .close:hover,
+    .close:focus {
+      color: #1a73e8;
+      outline: none;
+    }
+
+    /* Menu buttons and links */
+    .menu-button {
+      display: block;
+      background-color: #f4f7fb;
+      border: none;
+      padding: 14px 20px;
+      font-size: 17px;
+      cursor: pointer;
+      border-radius: 10px;
+      text-align: left;
+      color: #333;
+      font-weight: 600;
+      text-decoration: none;
+      user-select: none;
+      box-shadow: inset 0 0 0 0 transparent;
+      transition:
+        background-color 0.3s,
+        color 0.3s,
+        box-shadow 0.3s;
+    }
+
+    .menu-button:hover,
+    .menu-button:focus {
+      background-color: #e1eaff;
+      color: #1a73e8;
+      outline: none;
+      box-shadow: inset 4px 0 0 #1a73e8;
+    }
+
+    .menu-button.active {
+      background-color: #1a73e8;
+      color: white;
+      font-weight: 700;
+      box-shadow: inset 4px 0 0 white;
+      cursor: default;
+    }
+
+    /* Content page */
+    .contentpage {
+      flex-grow: 1;
+      padding: 50px 40px;
+      margin-left: 0;
+      background: white;
+      border-radius: 20px 0 0 20px;
+      box-shadow: 0 8px 20px rgb(0 0 0 / 0.08);
+      transition: filter 0.3s ease;
+      min-height: 100vh;
+      outline-offset: -6px;
+      overflow-y: auto;
+    }
+
+    .contentpage.disabled {
+      filter: blur(3px) brightness(0.9);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 18px;
+      background-color: #f0f3f8;
+      font-size: 0.9em;
+      color: #666;
+      box-shadow: 0 -1px 6px rgba(0,0,0,0.06);
+      font-weight: 500;
+      user-select: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 720px) {
+      nav.handburger {
+        width: 80vw;
+        border-radius: 0 12px 12px 0;
+        padding: 25px 15px 35px;
+      }
+
+      .contentpage {
+        padding: 25px 20px;
+        border-radius: 0;
+        min-height: auto;
+      }
+
+      #open {
+        top: 15px;
+        left: 15px;
+        font-size: 24px;
+        padding: 10px 15px;
+      }
+    }
+  </style>
 </head>
 <body>
 
-  <button onclick="openmenu()" id="open">☰ Menu</button>
-  <button class="close" onclick="closemenu()" aria-label="Close menu" style="display: none;">x</button>
+  <button id="open" aria-label="Open menu" aria-haspopup="true" aria-controls="menu">☰ Menu</button>
 
-  <div class="main-container">
-    <div class="handburger" id="menu">
-      <button class="menu-button" id="home">Home</button><br>
-      <button class="menu-button" id="movies">Movies</button><br>
-      <button class="menu-button" id="food">Food order</button><br>
-      <button class="menu-button" id="chat">AI chat</button><br>
-      <button class="menu-button" id="riddles">Riddles</button><br>
-      <button class="menu-button" id="games">Games</button><br>
-      <button class="menu-button" id="faqs">FAQs & Suggestions</button>
-    </div>
+  <nav class="handburger" id="menu" aria-label="Main menu" aria-hidden="true">
+    <button class="close" aria-label="Close menu">×</button>
 
-    <div class="contentpage" id="contentpage">
-      <h2>Welcome!</h2>
-      <p>Select a menu option to load content.</p>
-    </div>
-  </div>
+    <!-- Home button loads content -->
+    <button class="menu-button" id="home" type="button">Home</button>
+
+    <!-- Other links -->
+    <a class="menu-button" href="movies.html" id="movies">Movies</a>
+    <a class="menu-button" href="food.html" id="food">Food order</a>
+    <a class="menu-button" href="chat.html" id="chat">AI chat</a>
+    <a class="menu-button" href="riddles.html" id="riddles">Riddles</a>
+    <a class="menu-button" href="games.html" id="games">Games</a>
+    <a class="menu-button" href="faqs.html" id="faqs">FAQs & Suggestions</a>
+    <a class="menu-button" href="https://rex-bieber12345.github.io/LILTREX" target="_blank" rel="noopener noreferrer" id="version-1.00">Try version 1.00</a>
+  </nav>
+
+  <main class="contentpage" id="contentpage" tabindex="0" role="main" aria-live="polite">
+    <h2>Welcome!</h2>
+    <p>Select a menu option to load content.</p>
+  </main>
+
+  <footer>© 2025 Multipurpose Site. All rights reserved.</footer>
 
   <script>
+    const openBtn = document.getElementById('open');
+    const closeBtn = document.querySelector('.close');
+    const menu = document.getElementById('menu');
+    const contentpage = document.getElementById('contentpage');
+    const homeBtn = document.getElementById('home');
+
+    // Open menu with animation
     function openmenu() {
-      const closeBtn = document.querySelector('.close');
-      closeBtn.style.display = 'block';
-      setTimeout(() => closeBtn.classList.remove('hidden'), 10);
-      document.getElementById('menu').classList.add('open');
-      document.getElementById('open').style.display = 'none';
-      document.getElementById('contentpage').classList.add('disabled');
+      menu.classList.add('open');
+      menu.setAttribute('aria-hidden', 'false');
+      openBtn.style.display = 'none';
+      contentpage.classList.add('disabled');
+      closeBtn.focus();
     }
 
+    // Close menu with animation
     function closemenu() {
-      const closeBtn = document.querySelector('.close');
-      closeBtn.classList.add('hidden');
-      setTimeout(() => (closeBtn.style.display = 'none'), 150);
-      document.getElementById('menu').classList.remove('open');
-      document.getElementById('open').style.display = 'block';
-      document.getElementById('contentpage').classList.remove('disabled');
+      menu.classList.remove('open');
+      menu.setAttribute('aria-hidden', 'true');
+      openBtn.style.display = 'inline-block';
+      contentpage.classList.remove('disabled');
+      openBtn.focus();
     }
 
-    function setActiveButton(clickedBtn) {
-      const buttons = document.querySelectorAll('.menu-button');
-      const defaultNames = {
-        home: "Home",
-        movies: "Movies",
-        food: "Food order",
-        chat: "AI chat",
-        riddles: "Riddles",
-        games: "Games",
-        faqs: "FAQs & Suggestions"
-      };
+    // Load home content dynamically
+    function loadHomeContent() {
+      fetch('home.html')
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to load home.html');
+          return response.text();
+        })
+        .then(html => {
+          contentpage.innerHTML = html;
+          setActiveHome();
+          closemenu();
+        })
+        .catch(err => {
+          contentpage.innerHTML = `<p style="color:red;">${err.message}</p>`;
+        });
+    }
 
-      buttons.forEach(btn => {
-        const id = btn.id;
-        btn.innerText = defaultNames[id] || id;
-        btn.classList.remove('active');
-      });
+    // Set Home button active state
+    function setActiveHome() {
+      homeBtn.classList.add('active');
+    }
 
-      clickedBtn.innerText = "Active";
-      clickedBtn.classList.add('active');
+    // Remove active from Home button
+    function removeActiveHome() {
+      homeBtn.classList.remove('active');
+    }
 
-      const pageId = clickedBtn.id;
-      const pageFiles = {
-        home: "home.html",
-        movies: "movies.html",
-        food: "food.html",
-        chat: "chat.html",
-        riddles: "riddles.html",
-        games: "games.html",
-        faqs: "faqs.html"
-      };
+    // Event listeners
+    openBtn.addEventListener('click', openmenu);
+    closeBtn.addEventListener('click', closemenu);
 
-      const fileToLoad = pageFiles[pageId];
+    homeBtn.addEventListener('click', () => {
+      loadHomeContent();
+    });
 
-      if (fileToLoad) {
-        fetch(fileToLoad)
-          .then(response => {
-            if (!response.ok) throw new Error("Failed to load: " + fileToLoad);
-            return response.text();
-          })
-          .then(html => {
-            document.getElementById("contentpage").innerHTML = html;
-          })
-          .catch(err => {
-            document.getElementById("contentpage").innerHTML = `<p style="color:red;">${err.message}</p>`;
-          });
+    // Close menu if click outside menu when open
+    document.addEventListener('click', (e) => {
+      if (
+        menu.classList.contains('open') &&
+        !menu.contains(e.target) &&
+        e.target !== openBtn
+      ) {
+        closemenu();
       }
-    }
+    });
 
-    document.addEventListener("DOMContentLoaded", () => {
-      const buttons = document.querySelectorAll('.menu-button');
-      buttons.forEach(btn => {
-        btn.addEventListener('click', () => setActiveButton(btn));
-      });
+    // Keyboard accessibility: close menu on ESC key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && menu.classList.contains('open')) {
+        closemenu();
+      }
     });
   </script>
 
