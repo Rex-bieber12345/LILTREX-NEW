@@ -3,33 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <cite><title>Log On to multipurpose site</title></cite>
-<link rel="stylesheet" href="index.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  </head>
+  <title>Log On to multipurpose site</title>
+  <link rel="stylesheet" href="index.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  />
+</head>
 <body>
 
   <!-- User Form -->
-  <form class="form-section" id="userForm" aria-label="form" onsubmit="submitUser(event)" autocomplete="off">
+  <form class="form-section" id="userForm" aria-label="User login form" onsubmit="submitUser(event)" autocomplete="off">
     <h1><i class="fas fa-right-to-bracket"></i>LOG-ON</h1>
 
     <div class="inputGroup">
       <label for="userName">Name:</label>
       <i class="fas fa-user icon"></i>
-      <input class="input" type="text" id="userName" name="userName" placeholder="Enter name..." required>
+      <input class="input" type="text" id="userName" name="userName" placeholder="Enter name..." required />
     </div>
 
     <div class="inputGroup">
       <label for="userAge">Age:</label>
       <i class="fas fa-calendar icon"></i>
-      <input class="input" type="number" id="userAge" name="userAge" placeholder="Enter age..." required>
+      <input class="input" type="number" id="userAge" name="userAge" placeholder="Enter age..." min="1" max="120" required />
     </div>
 
     <div class="inputGroup">
       <label for="userGender">Gender:</label>
       <i class="fas fa-venus-mars icon"></i>
       <select class="input" id="userGender" name="userGender" required>
-        <option disabled selected>SELECT YOUR GENDER</option>
+        <option value="" disabled selected>SELECT YOUR GENDER</option>
         <option value="male">Male</option>
         <option value="female">Female</option>
       </select>
@@ -38,14 +41,21 @@
     <div class="inputGroup">
       <label for="userEmail">Email:</label>
       <i class="fas fa-envelope icon"></i>
-      <input class="input" type="email" id="userEmail" name="userEmail" placeholder="Enter email..." required>
+      <input class="input" type="email" id="userEmail" name="userEmail" placeholder="Enter email..." required />
     </div>
 
     <button type="submit">Submit</button>
   </form>
 
+  <!-- Fast Log-On button -->
+  <div class="fast-logon" style="margin-top: 1rem; text-align: center;">
+    <button type="button" onclick="fastLogon()" style="padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer;">
+      <i class="fas fa-bolt"></i> Fast Log-On
+    </button>
+  </div>
+
   <!-- Link to Admin Login Page -->
-  <div class="admin-link">
+  <div class="admin-link" style="margin-top: 2rem; text-align: center;">
     <a href="admin.html"><i class="fas fa-user-shield"></i> ADMIN LOGIN</a>
   </div>
 
@@ -60,11 +70,18 @@
 
       let users = JSON.parse(localStorage.getItem('users')) || [];
 
-      if (users.some(u => u.email === email)) {
-        alert('This email is already registered.');
+      // Find user by email
+      const existingUser = users.find(u => u.email === email);
+
+      if (existingUser) {
+        // User exists — welcome and redirect
+        alert(`Welcome back, ${existingUser.name}!`);
+        localStorage.setItem('currentUser', JSON.stringify(existingUser));
+        window.location.href = 'index1.html'; // Redirect after logon
         return;
       }
 
+      // New user - add to storage
       const user = {
         name,
         age,
@@ -81,6 +98,27 @@
       event.target.reset();
 
       window.location.href = 'index1.html'; // Redirect after sign in
+    }
+
+    // Fast logon function triggered by a button or link
+    function fastLogon() {
+      const email = prompt('Enter your registered email:');
+      if (!email) {
+        alert('Email is required for fast logon.');
+        return;
+      }
+      const emailLower = email.trim().toLowerCase();
+
+      let users = JSON.parse(localStorage.getItem('users')) || [];
+      const existingUser = users.find(u => u.email === emailLower);
+
+      if (existingUser) {
+        alert(`Welcome back, ${existingUser.name}!`);
+        localStorage.setItem('currentUser', JSON.stringify(existingUser));
+        window.location.href = 'index1.html'; // Redirect after logon
+      } else {
+        alert('Email not found. Please register first.');
+      }
     }
   </script>
 
